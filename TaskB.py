@@ -1,4 +1,5 @@
-import requests, json
+import requests
+
 type_response=requests.get("https://pokeapi.co/api/v2/type/?name").json() #dictionary, to be filtered by keys
 types=[]
 for x in type_response["results"]: #each x in the list type_response["results"] is a dictionary with keys "name", "url"
@@ -63,34 +64,24 @@ class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
             self.send_response(200)
-            self.send_header("Content-type","application/json")
+            self.send_header("Content-type","text/plain")
             self.end_headers()
             query=urlparse(self.path).query
             params=parse_qs(query)
-            outp={}
             if len(params)==1:
                 identity=list((params.keys()))[0]
                 if identity=="attacker":
                     type_input=params["attacker"][0]
                     n=types.index(type_input)
-                    x=[]
+                    x="["
                     for i in range (len(arr)-1,-1,-1):
-                        x.append(arr[i][n])
-                    outp["attacker"]=type_input
-                    outp["to_defenders"]={}
-                    for i in range(len(x)):
-                       outp["to_defenders"][f"{types[i]}"]=f"{x[len(x)-1-i]}"
-                    output=json.dumps(outp,sort_keys=True,indent=4)
-                    self.wfile.write(output.encode("utf-8"))
+                        x+=f"{arr[i][n]}, "
+                    x=x[:-2]+"]"
+                    self.wfile.write(bytes(x,"utf8"))
                 elif identity=="defender":
                     type_input=params["defender"][0]
-                    x=arr[len(arr)-1-(types.index(type_input))]
-                    outp["defender"]=type_input
-                    outp["from_attackers"]={}
-                    for i in range (len(arr)):
-                        outp["from_attackers"][f"{types[i]}"]=f"{x[i]}"
-                    output=json.dumps(outp,sort_keys=True,indent=4)
-                    self.wfile.write(output.encode("utf-8"))
+                    x=str(arr[len(arr)-1-(types.index(type_input))])
+                    self.wfile.write(bytes(x,"utf8"))
             elif len(params)==2:
                 att_type_input=def_type_input=0
                 for ele in params:
@@ -99,11 +90,8 @@ class handler(BaseHTTPRequestHandler):
                     elif ele=="defender":
                         def_type_input=params["defender"][0]
                 row=arr[len(arr)-1-(types.index(def_type_input))]
-                outp["attacker"]=att_type_input
-                outp["defender"]=def_type_input
-                outp["multiplier"]=row[types.index(att_type_input)]
-                output=json.dumps(outp,sort_keys=True,indent=4)
-                self.wfile.write(output.encode("utf-8"))
+                entry=str(row[types.index(att_type_input)])
+                self.wfile.write(bytes(entry,"utf8"))
         except (BrokenPipeError,ConnectionAbortedError) as err:
                 print(f"Connection aborted by client: {err}")
         except Exception as err:
